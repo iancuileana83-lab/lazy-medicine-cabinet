@@ -56,9 +56,20 @@ const photoUrl = (p) => (p.startsWith('demo:') ? `/demo-photos/${p.slice(5)}` : 
 
 // The product name is a textarea that grows with its text, so long names are never cut off.
 const grow = (t) => {
+  if (!t.offsetParent) return; // not displayed (hidden tab or empty table): it cannot be measured, so leave it alone
   t.style.height = 'auto';
   t.style.height = `${t.scrollHeight + (t.offsetHeight - t.clientHeight)}px`; // content plus the border, so nothing is clipped
 };
+// Re-measure whenever a name field becomes visible or changes width (tab switch, window resize, phone rotation, web fonts loading).
+const sizer = new ResizeObserver((entries) => {
+  for (const { target, contentRect } of entries) {
+    const w = Math.round(contentRect.width);
+    if (w && w !== target._w) {
+      target._w = w;
+      grow(target);
+    }
+  }
+});
 
 function renderRows() {
   const rows = view(state.items, today, { filter: $('filter').value, sort: $('sort').value });
@@ -103,12 +114,16 @@ function renderRows() {
       return tr;
     }),
   );
-  $('rows').querySelectorAll('textarea').forEach(grow);
+  // Show the table BEFORE measuring: a field inside a hidden table has no size.
   $('table').hidden = state.items.length === 0;
   $('empty').hidden = state.items.length > 0;
   $('demo-banner').hidden = !state.items.some((i) => i.demo);
+  sizer.disconnect();
+  $('rows').querySelectorAll('textarea').forEach((t) => {
+    grow(t);
+    sizer.observe(t);
+  });
 }
-window.addEventListener('resize', () => $('rows').querySelectorAll('textarea').forEach(grow));
 
 // ---------- Photo viewer ----------
 function openPhoto(url) {

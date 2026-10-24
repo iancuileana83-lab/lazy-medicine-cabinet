@@ -61,7 +61,7 @@ th { text-align:left; font-size:14px; color:var(--muted); padding:0 8px 8px; }
 th:nth-child(1) { width:72px; } th:nth-child(2) { width:30%; } th:nth-child(3) { width:22%; } th:nth-child(5) { width:11%; }
 td { padding:6px 8px; vertical-align:middle; }
 input[type=text], textarea { width:100%; font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
-textarea { display:block; resize:none; overflow:hidden; line-height:1.3; } /* the product name grows with its text */
+textarea { display:block; resize:none; overflow:hidden; line-height:1.3; min-height:calc(1.3em + 20px); } /* grows with its text, never thinner than one full line */
 
 /* light red for expired rows, light amber for rows expiring within 30 days (the text label and icon stay) */
 tr.r-expired > td { background:#fdeceb; } tr.r-soon30 > td { background:#fff2d9; }

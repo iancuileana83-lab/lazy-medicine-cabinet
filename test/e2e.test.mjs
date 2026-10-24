@@ -207,6 +207,43 @@ test('the photo URLs only serve our own files', async () => {
   assert.equal(r.headers.get('content-type'), 'image/jpeg');
 });
 
+// Every product-name field must be at least one normal line tall and show all of its text.
+const assertNamesReadable = async (page, where) => {
+  const m = await page.locator('[data-k=name]').evaluateAll((els) => els.map((e) => ({ h: e.clientHeight, clipped: e.scrollHeight > e.clientHeight + 1 })));
+  assert.ok(m.length > 0, where);
+  for (const [i, x] of m.entries()) {
+    assert.ok(x.h >= 36, `${where}: name field ${i} is only ${x.h}px tall`);
+    assert.equal(x.clipped, false, `${where}: name field ${i} cuts off its text`);
+  }
+};
+
+test('demo flow from the empty state: name fields are readable and the demo banner sits above the list (desktop and phone)', async () => {
+  for (const [label, viewport] of [['desktop', { width: 1100, height: 900 }], ['phone', { width: 390, height: 844 }]]) {
+    await putState({ items: [], nextCheck: '2030-01-01' });
+    const ctx = await browser.newContext({ viewport });
+    const page = await ctx.newPage();
+    await page.goto(base);
+    await page.getByRole('button', { name: 'Try the demo cabinet' }).click(); // the table was hidden until now
+    await page.locator('#rows tr').nth(6).waitFor();
+    await assertNamesReadable(page, `${label} after demo`);
+    const box = await page.evaluate(() => {
+      const r = (id) => document.getElementById(id).getBoundingClientRect();
+      return { banner: r('demo-banner'), button: r('demo-remove'), table: r('table') };
+    });
+    assert.ok(box.banner.height > 0 && box.button.height > 0, `${label}: demo banner and button are visible`);
+    assert.ok(box.banner.bottom <= box.table.top, `${label}: banner is above the list`);
+    // switching tabs and back must not squash the fields either
+    await page.getByRole('tab', { name: 'About' }).click();
+    await page.getByRole('tab', { name: 'Cabinet' }).click();
+    await assertNamesReadable(page, `${label} after tab switch`);
+    // a hand-typed long name grows the field and stays readable
+    await page.getByRole('button', { name: 'Add a line' }).click();
+    await page.locator('[data-k=name]').last().fill('A rather long product name as printed on the box, with brand, medicine, strength 500 mg and the pack size 20 coated tablets');
+    await assertNamesReadable(page, `${label} after typing`);
+    await ctx.close();
+  }
+});
+
 test('demo cabinet: seven fictional boxes, clearly labelled, removable without touching your own lines', async () => {
   await putState({ items: [], nextCheck: '2030-01-01' });
   const ctx = await browser.newContext();
