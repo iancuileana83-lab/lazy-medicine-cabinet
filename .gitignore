@@ -1,0 +1,4 @@
+node_modules/
+# Personal data: never commit your own medicine photos or inventory
+data/
+samples/

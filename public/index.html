@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lazy Medicine Cabinet</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<main>
+  <h1>Lazy Medicine Cabinet</h1>
+  <p class="sub">Photograph your medicine boxes. A local Gemma model reads them. Nothing leaves this laptop.</p>
+
+  <p class="disclaimer" role="note">Lazy Medicine Cabinet can misread labels. Always check each line against the real box. This tool gives no medical advice, doses or interaction information. Ask a pharmacist or doctor about your medicines.</p>
+
+  <section class="card">
+    <label class="btn" for="photo">Choose a photo</label>
+    <input id="photo" type="file" accept="image/*" hidden>
+    <span id="state" aria-live="polite"></span>
+  </section>
+
+  <section id="reminder" class="reminder" hidden>
+    These medicines are past their printed date. Take them back to a pharmacy for safe disposal. Please don't throw them in the bin or flush them.
+  </section>
+
+  <section class="card">
+    <table>
+      <thead><tr><th>Product name (as printed)</th><th>Expiry (as printed)</th><th>Status</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p id="empty" class="muted">No medicines yet. Add a photo, or add a line by hand.</p>
+    <button id="add" class="btn secondary" type="button">Add a line</button>
+    <p class="muted note">Month-only dates are treated as the end of that month.</p>
+  </section>
+</main>
+<script type="module" src="app.js"></script>
+</body>
+</html>
