@@ -7,30 +7,142 @@
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<main>
-  <h1>Lazy Medicine Cabinet</h1>
-  <p class="sub">Photograph your medicine boxes. A local Gemma model reads them. Nothing leaves this laptop.</p>
+<!-- Icons are drawn inline: nothing is loaded from the network. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-expired" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-soon30" viewBox="0 0 24 24"><path d="M12 3.5l9 16H3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4.5M12 17.2v.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-soon90" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 12.5l2.7 2.7L16 9.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-unknown" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.6 9.4a2.5 2.5 0 114 2c-.9.6-1.6 1-1.6 2.1M12 16.6v.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 10h17M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
 
+<header class="top">
+  <div class="brand">
+    <!-- Logo: a little cabinet with a pill on its shelf -->
+    <svg class="logo" viewBox="0 0 48 48" role="img" aria-label="Lazy Medicine Cabinet logo">
+      <rect x="6" y="5" width="36" height="38" rx="8" fill="#1f7a6d"/>
+      <rect x="10" y="9" width="28" height="30" rx="5" fill="#fff8ee"/>
+      <path d="M10 24h28" stroke="#1f7a6d" stroke-width="3"/>
+      <g transform="rotate(-35 24 16)"><rect x="16.5" y="12.5" width="15" height="7" rx="3.5" fill="#c8553d"/><path d="M24 12.5h4a3.5 3.5 0 010 7h-4z" fill="#f4c9bd"/></g>
+      <circle cx="17" cy="32.5" r="3" fill="#e0a43b"/><rect x="24" y="29" width="9" height="7" rx="2" fill="#1f7a6d"/>
+    </svg>
+    <div>
+      <h1>Lazy Medicine Cabinet</h1>
+      <p class="sub">Photograph your medicine boxes. A local Gemma model reads them. Nothing leaves this laptop.</p>
+    </div>
+  </div>
+  <div id="nextcheck" class="nextcheck">
+    <svg class="ico" aria-hidden="true"><use href="#i-calendar"/></svg>
+    <div>
+      <div><span id="nextcheck-text"></span> <button id="nextcheck-change" class="link" type="button">Change</button></div>
+      <input id="nextcheck-input" type="date" aria-label="Next check date" hidden>
+      <div id="nextcheck-due" class="due" hidden>Time for your next check.</div>
+      <div class="tiny">Shown here only. This app does not send notifications.</div>
+    </div>
+  </div>
+</header>
+
+<main>
   <p class="disclaimer" role="note">Lazy Medicine Cabinet can misread labels. Always check each line against the real box. This tool gives no medical advice, doses or interaction information. Ask a pharmacist or doctor about your medicines.</p>
 
-  <section class="card">
-    <label class="btn" for="photo">Choose a photo</label>
-    <input id="photo" type="file" accept="image/*" hidden>
-    <span id="state" aria-live="polite"></span>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" id="tab-cabinet" aria-controls="panel-cabinet" aria-selected="true" data-tab="cabinet" type="button">Cabinet</button>
+    <button role="tab" id="tab-bag" aria-controls="panel-bag" aria-selected="false" data-tab="bag" type="button">Pharmacy bag <span id="bag-count" class="count" hidden></span></button>
+    <button role="tab" id="tab-about" aria-controls="panel-about" aria-selected="false" data-tab="about" type="button">About</button>
+  </nav>
+
+  <!-- CABINET -->
+  <section id="panel-cabinet" role="tabpanel" aria-labelledby="tab-cabinet">
+    <div id="summary" class="cards"></div>
+    <p id="summary-unknown" class="unknown-line" hidden></p>
+
+    <div id="reminder" class="reminder" hidden>These medicines are past their printed date. Take them back to a pharmacy for safe disposal. Please don't throw them in the bin or flush them.</div>
+
+    <section class="card">
+      <label class="btn" for="photo">Choose a photo</label>
+      <input id="photo" type="file" accept="image/*" hidden>
+      <span id="state" aria-live="polite"></span>
+    </section>
+
+    <section class="card">
+      <div class="controls">
+        <label>Show:
+          <select id="filter">
+            <option value="all">All</option>
+            <option value="expired">Expired</option>
+            <option value="soon30">Expires within 30 days</option>
+            <option value="soon90">Expires within 90 days</option>
+            <option value="ok">OK</option>
+            <option value="unknown">Date not found</option>
+          </select>
+        </label>
+        <label>Sort by:
+          <select id="sort">
+            <option value="earliest">Expiry date, earliest first</option>
+            <option value="latest">Expiry date, latest first</option>
+            <option value="name">Name</option>
+          </select>
+        </label>
+      </div>
+      <table>
+        <thead><tr><th>Product name (as printed)</th><th>Expiry (as printed)</th><th>Status</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p id="empty" class="muted">No medicines yet. Add a photo, or add a line by hand.</p>
+      <div class="actions">
+        <button id="add" class="btn secondary" type="button">Add a line</button>
+        <button id="clear" class="btn danger-outline" type="button">Clear all</button>
+        <span id="confirm" class="confirm" hidden>
+          <span>Remove all medicines from this list? This cannot be undone.</span>
+          <button id="confirm-yes" class="btn danger" type="button">Remove all</button>
+          <button id="confirm-no" class="btn secondary" type="button">Cancel</button>
+        </span>
+      </div>
+      <p class="muted note">Month-only dates are treated as the end of that month.</p>
+      <p class="muted tiny">Saved on this laptop only.</p>
+    </section>
   </section>
 
-  <section id="reminder" class="reminder" hidden>
-    These medicines are past their printed date. Take them back to a pharmacy for safe disposal. Please don't throw them in the bin or flush them.
+  <!-- PHARMACY BAG -->
+  <section id="panel-bag" role="tabpanel" aria-labelledby="tab-bag" hidden>
+    <div class="card" id="bag">
+      <h2>Pharmacy bag</h2>
+      <p class="print-only printhead" id="printhead"></p>
+      <p>Expired medicines to take back to a pharmacy for safe disposal. Please don't throw them in the bin or flush them.</p>
+      <ul id="bag-list" class="baglist"></ul>
+      <p id="bag-empty" class="muted">Nothing expired right now.</p>
+      <div id="bag-unknown-wrap" hidden>
+        <h3>Date not found. Please check these boxes by hand.</h3>
+        <ul id="bag-unknown" class="baglist"></ul>
+      </div>
+      <p class="print-only printfoot">Check each box against this list before you go. This list comes from a tool that can misread labels.</p>
+      <button id="print" class="btn" type="button">Print this list</button>
+    </div>
   </section>
 
-  <section class="card">
-    <table>
-      <thead><tr><th>Product name (as printed)</th><th>Expiry (as printed)</th><th>Status</th><th></th></tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <p id="empty" class="muted">No medicines yet. Add a photo, or add a line by hand.</p>
-    <button id="add" class="btn secondary" type="button">Add a line</button>
-    <p class="muted note">Month-only dates are treated as the end of that month.</p>
+  <!-- ABOUT -->
+  <section id="panel-about" role="tabpanel" aria-labelledby="tab-about" hidden>
+    <div class="card about">
+      <h2>What it does</h2>
+      <p>Take a photo of your medicine boxes. A Gemma model running on this laptop reads the product name and expiry date, and the app shows which ones are expired or running out.</p>
+      <h2>Privacy promise</h2>
+      <p>Nothing leaves this laptop. No cloud services, no accounts, no analytics. Your photos are not stored. Only the list you see is saved, in a file on this computer.</p>
+      <h2>How it works</h2>
+      <ol>
+        <li>You choose a photo.</li>
+        <li>The local model copies the name and date as printed.</li>
+        <li>The app works out the status.</li>
+        <li>You check and fix each line.</li>
+      </ol>
+      <h2>Limits</h2>
+      <p>Lazy Medicine Cabinet can misread labels. Always check each line against the real box. This tool gives no medical advice, doses or interaction information. Ask a pharmacist or doctor about your medicines.</p>
+      <p>Month-only dates are treated as the end of that month.</p>
+      <p>One photo takes about a minute on a laptop without a graphics card.</p>
+      <p class="muted">Open source, MIT license. The test photos in the repository are generated pictures of fictional boxes.</p>
+    </div>
   </section>
 </main>
 <script type="module" src="app.js"></script>

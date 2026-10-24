@@ -4,22 +4,28 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scanImage, OLLAMA_URL, MODEL } from './lib/extract.mjs';
+import { normalizeState } from './lib/inventory.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PORT = +(process.env.PORT || 3977);
 const DATA = process.env.LMC_DATA || path.join(HERE, 'data', 'cabinet.json');
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
+const TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+};
 
-const readItems = () => {
+const readState = () => {
   try {
-    return JSON.parse(fs.readFileSync(DATA, 'utf8'));
+    return normalizeState(JSON.parse(fs.readFileSync(DATA, 'utf8'))); // also migrates the first version's bare array
   } catch {
-    return [];
+    return normalizeState(null);
   }
 };
-const writeItems = (items) => {
+const writeState = (state) => {
   fs.mkdirSync(path.dirname(DATA), { recursive: true });
-  fs.writeFileSync(DATA, JSON.stringify(items, null, 2));
+  fs.writeFileSync(DATA, JSON.stringify(state, null, 2));
 };
 const body = (req, limit = 15e6) =>
   new Promise((ok, no) => {
@@ -51,12 +57,11 @@ export const server = http.createServer(async (req, res) => {
       } catch {}
       return json(res, 200, { ollama, model: MODEL });
     }
-    if (url.pathname === '/api/items' && req.method === 'GET') return json(res, 200, readItems());
-    if (url.pathname === '/api/items' && req.method === 'PUT') {
-      const items = JSON.parse(await body(req));
-      if (!Array.isArray(items)) return json(res, 400, { error: 'expected an array' });
-      writeItems(items.map((x) => ({ name: String(x.name ?? ''), expiry: String(x.expiry ?? '') })));
-      return json(res, 200, { ok: true });
+    if (url.pathname === '/api/state' && req.method === 'GET') return json(res, 200, readState());
+    if (url.pathname === '/api/state' && req.method === 'PUT') {
+      const state = normalizeState(JSON.parse(await body(req)));
+      writeState(state);
+      return json(res, 200, state);
     }
     if (url.pathname === '/api/scan' && req.method === 'POST') {
       const { image } = JSON.parse(await body(req));
@@ -67,14 +72,10 @@ export const server = http.createServer(async (req, res) => {
         return json(res, 502, { error: `Could not reach the local model (${e.message}). Is Ollama running?` });
       }
     }
+    // Static files: public/ plus the shared logic in lib/*.mjs (the browser runs the exact code the tests cover).
     const rel = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
-    const root = path.join(HERE, 'public');
-    // The browser reuses the exact status logic the tests cover.
-    const file = rel === 'status.js' ? path.join(HERE, 'lib', 'status.mjs') : path.join(root, rel);
-    if (rel === 'status.js') {
-      res.writeHead(200, { 'Content-Type': TYPES['.js'] });
-      return fs.createReadStream(file).pipe(res);
-    }
+    const root = rel.startsWith('lib/') && rel.endsWith('.mjs') ? path.join(HERE, 'lib') : path.join(HERE, 'public');
+    const file = path.join(root, rel.startsWith('lib/') ? rel.slice(4) : rel);
     if (!file.startsWith(root) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return json(res, 404, { error: 'not found' });
     res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream' });
     fs.createReadStream(file).pipe(res);

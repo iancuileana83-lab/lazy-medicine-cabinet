@@ -8,18 +8,32 @@ Take a photo of your medicine boxes. A **Gemma 3 vision model running locally on
 
 Built for the DEV Hacktoberfest Open-Source AI Challenge (week 3, "Slow and Steady"), Gemma category: the model runs locally.
 
-![The app after scanning three boxes](docs/screenshot-results.png)
+![The Cabinet tab: summary cards, filter and sort, editable lines](docs/screenshot-cabinet.png)
+
+## What's in the app
+
+- **Cabinet:** summary cards (Expired, Expires within 30 days, Expires within 90 days, OK; click one to filter), a filter and a sort by expiry date or name, and every line editable by hand. Your list is saved on your disk and is still there next session. "Clear all" asks first.
+- **Pharmacy bag:** the expired items to take back to a pharmacy for safe disposal, plus the lines whose date could not be read ("check these boxes by hand"). "Print this list" prints only that list.
+- **Next check:** a date shown on top, three months ahead by default, that you can change. It is only a date on the screen: the app sends no notifications.
+- **About:** what it does, the privacy promise, how it works and the limits.
+- It works on a phone-sized screen too, and every status has an icon and a text label, never colour alone.
+
+![Pharmacy bag tab](docs/screenshot-pharmacy-bag.png)
 
 When the model cannot read a date properly (here it returned `Use by 32/2026`), the app does not guess. It asks you to check the box:
 
 ![An unreadable date is flagged, not guessed](docs/screenshot-unreadable-date.png)
 
+On a phone-sized screen the lines stack as cards:
+
+<img src="docs/screenshot-phone.png" alt="The Cabinet tab on a phone-sized screen" width="320">
+
 ## How it works
 
-1. The browser shrinks your photo (longest side 1024 px) and sends it to the local server.
+1. The browser shrinks your photo (longest side 1024 px) and sends it to the local server. The photo is not stored.
 2. The server asks `gemma3:4b` (via `http://127.0.0.1:11434`) to copy the name and the expiry text **exactly as printed**. The prompt forbids describing uses, doses or advice.
 3. The app parses the printed date and computes the status **in code**, not with the model.
-4. You review and fix any line. Your list is saved in `data/cabinet.json` on your disk.
+4. You review and fix any line. Your list and the next-check date are saved in `data/cabinet.json` on your disk (a file from the first version, a bare list, is migrated automatically).
 
 Month-only dates are treated as the end of that month (`EXP 03/2027` is valid through 2027-03-31). Dates are read day-first (`31/10/2026`) or ISO (`2026-10-31`). A date the app cannot parse is shown as "Date not found, please check the box and enter it by hand."
 
@@ -60,7 +74,8 @@ npm test
 
 - unit tests for date parsing and status boundaries (month-only dates, leap years, impossible dates),
 - unit tests for parsing the model's output (code fences, junk, duplicates) with a mocked Ollama,
-- a Playwright end-to-end test of the real app with a stand-in for Ollama (needs `npx playwright install chromium` once). It also checks that no request leaves localhost.
+- unit tests for the inventory views (counts, filter, sort, pharmacy bag, next-check date maths, migration of old data),
+- Playwright end-to-end tests of the real app with a stand-in for Ollama (needs `npx playwright install chromium` once): scan, summary cards, filter and sort, pharmacy bag, next check, saved data, "Clear all", a phone-sized layout with no sideways scrolling, and a check that no request leaves localhost. 19 tests in total.
 
 To re-run the model on the sample photos: `node tools/run-samples.mjs generated`, then `node tools/score.mjs results.json` (needs Ollama and ffmpeg).
 
