@@ -1,6 +1,7 @@
-node_modules/
+﻿node_modules/
 # Personal data: never commit your own medicine photos or inventory
 data/
-# samples/ holds only GENERATED photos of FICTIONAL boxes (see tools/make-samples.mjs), so it is committed.
-# Put your own real photos in samples/private/ instead.
-samples/private/
+# samples/ is for YOUR real photos and is ignored. Only samples/generated/ (fictional boxes drawn by
+# tools/make-samples.mjs) is committed.
+samples/*
+!samples/generated/

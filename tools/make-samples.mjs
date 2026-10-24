@@ -1,4 +1,4 @@
-// Generates 5 "photos" of FICTIONAL medicine boxes (invented brands, no real logos or packaging)
+﻿// Generates 5 "photos" of FICTIONAL medicine boxes (invented brands, no real logos or packaging)
 // by rendering CSS 3D boxes with Playwright. Output: samples/*.jpg and samples/truth.json.
 // Usage: node tools/make-samples.mjs
 import fs from 'node:fs';
@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'file:///C:/Users/Lenovo/molecule-lab/node_modules/playwright/index.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const OUT = path.join(HERE, '..', 'samples');
+const OUT = path.join(HERE, '..', 'samples', 'generated');
 fs.mkdirSync(OUT, { recursive: true });
 
 // Ground truth. `printed` is exactly the text on the box; `status` is for today = 2026-10-24.
@@ -53,7 +53,7 @@ function faceFront(b, date) {
 }
 function faceSide(b, date) {
   const small = date === 'side' ? `<div class="sidedate">${b.printed}</div>` : '';
-  return `<div class="face side" style="background:${b.color}"><div class="sidetext">${b.brand} · ${b.generic}</div>${small}</div>`;
+  return `<div class="face side" style="background:${b.color}"><div class="sidetext">${b.brand} Â· ${b.generic}</div>${small}</div>`;
 }
 function box(b, o) {
   const s = o.scale || 1.5;
@@ -115,3 +115,4 @@ for (const s of SCENES) {
 }
 fs.writeFileSync(path.join(OUT, 'truth.json'), JSON.stringify({ today: '2026-10-24', photos: truth }, null, 2));
 await browser.close();
+

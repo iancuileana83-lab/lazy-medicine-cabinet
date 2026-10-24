@@ -1,0 +1,123 @@
+{
+  "model": "gemma3:4b",
+  "today": "2026-10-24",
+  "photos": {
+    "1-shelf-paracetamol.jpg": {
+      "secs": 74,
+      "error": null,
+      "raw": [
+        {
+          "name": "Kalmora Paracetamol 500 mg 20 tablets",
+          "expiry": "EXP 03/2027"
+        }
+      ],
+      "rows": [
+        {
+          "truth": "Kalmora Paracetamol 500 mg | EXP 03/2027 | ok",
+          "read": "Kalmora Paracetamol 500 mg 20 tablets | EXP 03/2027 | ok",
+          "nameOk": true,
+          "expiryOk": true,
+          "statusOk": true
+        }
+      ]
+    },
+    "2-table-ibuprofen.jpg": {
+      "secs": 64,
+      "error": null,
+      "raw": [
+        {
+          "name": "Brevixa Ibuprofen 200 mg 24 coated tablets",
+          "expiry": "EXP 2025-11"
+        }
+      ],
+      "rows": [
+        {
+          "truth": "Brevixa Ibuprofen 200 mg | EXP: 2025-11 | expired",
+          "read": "Brevixa Ibuprofen 200 mg 24 coated tablets | EXP 2025-11 | expired",
+          "nameOk": true,
+          "expiryOk": true,
+          "statusOk": true
+        }
+      ]
+    },
+    "3-shelf-vitamin.jpg": {
+      "secs": 65,
+      "error": null,
+      "raw": [
+        {
+          "name": "SunNest Vitamin D3 1000 IU 60 softgels",
+          "expiry": "EXP 08.2026"
+        }
+      ],
+      "rows": [
+        {
+          "truth": "SunNest Vitamin D3 1000 IU | Exp. 08.2026 | expired",
+          "read": "SunNest Vitamin D3 1000 IU 60 softgels | EXP 08.2026 | expired",
+          "nameOk": true,
+          "expiryOk": true,
+          "statusOk": true
+        }
+      ]
+    },
+    "4-side-date-saline.jpg": {
+      "secs": 64,
+      "error": null,
+      "raw": [
+        {
+          "name": "Nasovie Saline nasal spray 20 ml",
+          "expiry": "Use by 32/2026"
+        }
+      ],
+      "rows": [
+        {
+          "truth": "Nasovie Saline nasal spray | Use by 12/2026 | soon90",
+          "read": "Nasovie Saline nasal spray 20 ml | Use by 32/2026 | unknown",
+          "nameOk": true,
+          "expiryOk": false,
+          "statusOk": false
+        }
+      ]
+    },
+    "5-three-boxes.jpg": {
+      "secs": 77,
+      "error": null,
+      "raw": [
+        {
+          "name": "Allerisa Loratadine 10 mg 30 tablets",
+          "expiry": "EXP 01/2028"
+        },
+        {
+          "name": "Kalmora Paracetamol 500 mg 16 tablets",
+          "expiry": "EXP 2026-09"
+        },
+        {
+          "name": "Brevixa Ibuprofen 200 mg 12 tablets",
+          "expiry": "Use by 12/2026"
+        }
+      ],
+      "rows": [
+        {
+          "truth": "Allerisa Loratadine 10 mg | EXP 01/2028 | ok",
+          "read": "Allerisa Loratadine 10 mg 30 tablets | EXP 01/2028 | ok",
+          "nameOk": true,
+          "expiryOk": true,
+          "statusOk": true
+        },
+        {
+          "truth": "Kalmora Paracetamol 500 mg | EXP: 2026-09 | expired",
+          "read": "Kalmora Paracetamol 500 mg 16 tablets | EXP 2026-09 | expired",
+          "nameOk": true,
+          "expiryOk": true,
+          "statusOk": true
+        },
+        {
+          "truth": "Brevixa Ibuprofen 200 mg | Use by 12/2026 | soon90",
+          "read": "Brevixa Ibuprofen 200 mg 12 tablets | Use by 12/2026 | soon90",
+          "nameOk": true,
+          "expiryOk": true,
+          "statusOk": true
+        }
+      ]
+    }
+  }
+}

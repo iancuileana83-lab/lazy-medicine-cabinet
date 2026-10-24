@@ -1,4 +1,4 @@
-// Runs every photo in samples/ through the same scan code the app uses and compares with truth.json.
+﻿// Runs every photo in samples/ through the same scan code the app uses and compares with truth.json.
 // Usage: node tools/run-samples.mjs   (needs Ollama running with the model pulled; ffmpeg on PATH)
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,7 +9,7 @@ import { scanImage, MODEL } from '../lib/extract.mjs';
 import { statusFor } from '../lib/status.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DIR = path.join(HERE, '..', 'samples');
+const DIR = path.join(HERE, '..', 'samples', process.argv[2] || 'generated');
 const truth = JSON.parse(fs.readFileSync(path.join(DIR, 'truth.json'), 'utf8'));
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'lmc-'));
 const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -42,5 +42,6 @@ for (const [file, boxes] of Object.entries(truth.photos)) {
   console.log(`${file} (${secs}s)${error ? ' ERROR ' + error : ''}`);
   console.log('  raw:', JSON.stringify(read));
   rows.forEach((r) => console.log(`  truth: ${r.truth}\n  read : ${r.read}   name:${r.nameOk} expiry:${r.expiryOk} status:${r.statusOk}`));
-  fs.writeFileSync(path.join(DIR, 'results.json'), JSON.stringify(report, null, 2));
+  fs.writeFileSync(path.join(DIR, process.env.LMC_RESULTS || 'results.json'), JSON.stringify(report, null, 2));
 }
+

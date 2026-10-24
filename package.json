@@ -1,12 +1,17 @@
-{
-  "name": "lazy-medicine-cabinet",
-  "version": "0.1.0",
-  "description": "Photograph your medicine boxes; a local Gemma model (via Ollama) lists names and expiry dates. Nothing leaves your laptop.",
-  "type": "module",
-  "license": "MIT",
-  "scripts": {
-    "start": "node server.mjs",
-    "test": "node --test \"test/*.test.mjs\""
-  },
-  "engines": { "node": ">=20" }
+﻿{
+    "name":  "lazy-medicine-cabinet",
+    "version":  "0.1.0",
+    "description":  "Photograph your medicine boxes; a local Gemma model (via Ollama) lists names and expiry dates. Nothing leaves your laptop.",
+    "type":  "module",
+    "license":  "MIT",
+    "scripts":  {
+                    "start":  "node server.mjs",
+                    "test":  "node --test \"test/*.test.mjs\""
+                },
+    "engines":  {
+                    "node":  "\u003e=20"
+                },
+    "devDependencies":  {
+                            "playwright":  "1.63.0"
+                        }
 }
