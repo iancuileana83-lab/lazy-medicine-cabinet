@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addMonths, formatDate, isDue, summarize, view, bagLists, normalizeState } from '../lib/inventory.mjs';
+import { addMonths, formatDate, isDue, summarize, view, bagLists, normalizeState, timeLeft } from '../lib/inventory.mjs';
 
 const T = '2026-10-24';
 const items = [
@@ -43,6 +43,37 @@ test('pharmacy bag lists expired items first-expired-first and unreadable dates 
   const b = bagLists(items, T);
   assert.deepEqual(b.expired.map((r) => r.item.name), ['Alpha', 'Gamma']);
   assert.deepEqual(b.unknown.map((r) => r.item.name), ['Mid']);
+});
+
+test('timeLeft wording', () => {
+  assert.equal(timeLeft(null), '');
+  assert.equal(timeLeft(0), 'Expires today');
+  assert.equal(timeLeft(1), '1 day left');
+  assert.equal(timeLeft(2), 'Expires in 2 days');
+  assert.equal(timeLeft(12), 'Expires in 12 days');
+  assert.equal(timeLeft(30), 'Expires in 30 days');
+  assert.equal(timeLeft(31), '31 days left');
+  assert.equal(timeLeft(68), '68 days left');
+  assert.equal(timeLeft(119), '119 days left');
+  assert.equal(timeLeft(120), 'about 4 months left');
+  assert.equal(timeLeft(400), 'about 13 months left');
+  assert.equal(timeLeft(800), 'about 2 years left');
+  assert.equal(timeLeft(-1), 'Expired 1 day ago');
+  assert.equal(timeLeft(-12), 'Expired 12 days ago');
+  assert.equal(timeLeft(-59), 'Expired 59 days ago');
+  assert.equal(timeLeft(-60), 'Expired 2 months ago');
+  assert.equal(timeLeft(-400), 'Expired 13 months ago');
+  assert.equal(timeLeft(-800), 'Expired 2 years ago');
+});
+
+test('normalizeState keeps photo references and the demo flag, but only safe ones', () => {
+  const ok = { name: 'A', expiry: 'x', photo: '0123456789abcdef.jpg', demo: true };
+  assert.deepEqual(normalizeState({ items: [ok] }).items[0], ok);
+  assert.deepEqual(normalizeState({ items: [{ name: 'A', expiry: 'x', photo: 'demo:1-shelf-paracetamol.jpg' }] }).items[0].photo, 'demo:1-shelf-paracetamol.jpg');
+  for (const bad of ['../server.mjs', '..\\x.jpg', 'a/b.jpg', '0123456789abcdef.png', 'demo:../x.jpg', 'ABCDEF.jpg', 42, null]) {
+    assert.equal('photo' in normalizeState({ items: [{ name: 'A', expiry: '', photo: bad }] }).items[0], false, String(bad));
+  }
+  assert.equal('demo' in normalizeState({ items: [{ name: 'A', expiry: '', demo: 'yes' }] }).items[0], false);
 });
 
 test('normalizeState migrates the old array format and drops junk', () => {

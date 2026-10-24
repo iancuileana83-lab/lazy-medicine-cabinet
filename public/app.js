@@ -1,5 +1,5 @@
 import { statusFor, STATUS_LABEL } from '/lib/status.mjs';
-import { todayISO, addMonths, formatDate, isDue, isBlank, summarize, view, bagLists } from '/lib/inventory.mjs';
+import { todayISO, addMonths, formatDate, isDue, summarize, view, bagLists, timeLeft } from '/lib/inventory.mjs';
 
 const $ = (id) => document.getElementById(id);
 const today = todayISO();
@@ -52,14 +52,27 @@ function renderSummary() {
   $('reminder').hidden = c.expired === 0;
 }
 
+const photoUrl = (p) => (p.startsWith('demo:') ? `/demo-photos/${p.slice(5)}` : `/photos/${p}`);
+
+// The product name is a textarea that grows with its text, so long names are never cut off.
+const grow = (t) => {
+  t.style.height = 'auto';
+  t.style.height = `${t.scrollHeight + (t.offsetHeight - t.clientHeight)}px`; // content plus the border, so nothing is clipped
+};
+
 function renderRows() {
   const rows = view(state.items, today, { filter: $('filter').value, sort: $('sort').value });
   $('rows').replaceChildren(
     ...rows.map(({ item, index, st }) => {
-      const tr = el('tr');
+      const tr = el('tr', { className: st.status === 'expired' ? 'r-expired' : st.status === 'soon30' ? 'r-soon30' : '' });
       const field = (k, label) => {
-        const inp = el('input', { type: 'text', value: item[k], ariaLabel: label });
+        const inp = k === 'name' ? el('textarea', { rows: 1, value: item.name }) : el('input', { type: 'text', value: item[k] });
+        inp.setAttribute('aria-label', label);
         inp.dataset.k = k;
+        if (k === 'name') {
+          inp.addEventListener('input', () => grow(inp));
+          inp.addEventListener('keydown', (e) => e.key === 'Enter' && (e.preventDefault(), inp.blur())); // names are one line of text
+        }
         inp.addEventListener('change', () => {
           state.items[index][k] = inp.value;
           save();
@@ -69,21 +82,60 @@ function renderRows() {
         td.dataset.label = k === 'name' ? 'Product name (as printed)' : 'Expiry (as printed)';
         return td;
       };
+      const photoTd = el('td');
+      photoTd.dataset.label = '';
+      if (item.photo) {
+        const btn = el('button', { type: 'button', className: 'thumb' }, el('img', { src: photoUrl(item.photo), alt: 'Photo this line was read from. Click to enlarge.', loading: 'lazy' }));
+        btn.addEventListener('click', () => openPhoto(photoUrl(item.photo)));
+        photoTd.append(btn);
+      }
       const badge = el('span', { className: `badge ${st.status}` }, icon(st.status), STATUS_LABEL[st.status]);
       const statusTd = el('td', {}, badge);
+      if (st.status !== 'unknown') statusTd.append(el('div', { className: 'left', textContent: timeLeft(st.daysLeft) }));
       statusTd.dataset.label = 'Status';
       const rm = el('button', { type: 'button', className: 'btn remove', textContent: 'Remove' });
       rm.addEventListener('click', () => {
-        state.items.splice(index, 1);
+        state.items.splice(index, 1); // the server deletes the photo once no line uses it
         save();
         renderAll();
       });
-      tr.append(field('name', 'Product name'), field('expiry', 'Expiry date'), statusTd, el('td', {}, rm));
+      tr.append(photoTd, field('name', 'Product name'), field('expiry', 'Expiry date'), statusTd, el('td', {}, rm));
       return tr;
     }),
   );
+  $('rows').querySelectorAll('textarea').forEach(grow);
+  $('table').hidden = state.items.length === 0;
   $('empty').hidden = state.items.length > 0;
+  $('demo-banner').hidden = !state.items.some((i) => i.demo);
 }
+window.addEventListener('resize', () => $('rows').querySelectorAll('textarea').forEach(grow));
+
+// ---------- Photo viewer ----------
+function openPhoto(url) {
+  $('lb-img').src = url;
+  $('lightbox').hidden = false;
+  $('lb-close').focus();
+}
+const closePhoto = () => {
+  $('lightbox').hidden = true;
+  $('lb-img').removeAttribute('src');
+};
+$('lb-close').addEventListener('click', closePhoto);
+$('lightbox').addEventListener('click', (e) => e.target === $('lightbox') && closePhoto());
+document.addEventListener('keydown', (e) => e.key === 'Escape' && !$('lightbox').hidden && closePhoto());
+
+// ---------- Demo cabinet ----------
+$('demo-load').addEventListener('click', async () => {
+  const { items } = await (await fetch('/api/demo')).json();
+  state.items.push(...items);
+  await save();
+  renderAll();
+});
+$('demo-remove').addEventListener('click', () => {
+  state.items = state.items.filter((i) => !i.demo); // your own lines stay
+  save();
+  renderAll();
+});
 
 const renderCabinet = () => {
   renderSummary();
@@ -180,10 +232,9 @@ $('photo').addEventListener('change', async (e) => {
     const r = await fetch('/api/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image }) });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error);
-    state.items.push(...j.items);
-    await save();
+    state.items = j.state.items; // the server added the new lines and kept the photo
     renderAll();
-    $('state').textContent = j.items.length ? `Found ${j.items.length} line(s). Please check each one against the real box.` : 'No medicines found in that photo. You can add lines by hand.';
+    $('state').textContent = j.added ? `Found ${j.added} line(s). Please check each one against the real box.` : 'No medicines found in that photo. You can add lines by hand.';
   } catch (err) {
     $('state').textContent = err.message;
   }

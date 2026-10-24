@@ -56,6 +56,10 @@
 
   <!-- CABINET -->
   <section id="panel-cabinet" role="tabpanel" aria-labelledby="tab-cabinet">
+    <div id="demo-banner" class="demo" hidden>
+      <span>Demo data: fictional boxes. These lines were read by Gemma from generated test photos.</span>
+      <button id="demo-remove" class="btn secondary" type="button">Remove demo data</button>
+    </div>
     <div id="summary" class="cards"></div>
     <p id="summary-unknown" class="unknown-line" hidden></p>
 
@@ -87,16 +91,31 @@
           </select>
         </label>
       </div>
-      <table>
-        <thead><tr><th>Product name (as printed)</th><th>Expiry (as printed)</th><th>Status</th><th></th></tr></thead>
+      <table id="table">
+        <thead><tr><th></th><th>Product name (as printed)</th><th>Expiry (as printed)</th><th>Status</th><th></th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
-      <p id="empty" class="muted">No medicines yet. Add a photo, or add a line by hand.</p>
+      <div id="empty" class="empty">
+        <!-- A friendly little cabinet, drawn inline -->
+        <svg class="empty-art" viewBox="0 0 200 150" aria-hidden="true">
+          <ellipse cx="100" cy="138" rx="70" ry="8" fill="#eadfce"/>
+          <rect x="45" y="12" width="110" height="120" rx="14" fill="#1f7a6d"/>
+          <rect x="53" y="20" width="94" height="104" rx="9" fill="#fff8ee"/>
+          <path d="M53 72h94" stroke="#1f7a6d" stroke-width="4"/>
+          <rect x="64" y="34" width="20" height="30" rx="5" fill="#c8553d"/><rect x="67" y="28" width="14" height="8" rx="2" fill="#f4c9bd"/>
+          <rect x="92" y="40" width="18" height="24" rx="5" fill="#e0a43b"/><rect x="118" y="46" width="16" height="18" rx="5" fill="#7bb8ae"/>
+          <g transform="rotate(-25 80 96)"><rect x="66" y="90" width="28" height="12" rx="6" fill="#c8553d"/><path d="M80 90h8a6 6 0 010 12h-8z" fill="#f4c9bd"/></g>
+          <circle cx="112" cy="97" r="7" fill="#e0a43b"/><circle cx="130" cy="99" r="6" fill="#7bb8ae"/>
+        </svg>
+        <p>No medicines yet. Add a photo, or add a line by hand.</p>
+        <p class="muted">Not ready to scan yet? Look around with seven fictional boxes.</p>
+        <button id="demo-load" class="btn secondary" type="button">Try the demo cabinet</button>
+      </div>
       <div class="actions">
         <button id="add" class="btn secondary" type="button">Add a line</button>
         <button id="clear" class="btn danger-outline" type="button">Clear all</button>
         <span id="confirm" class="confirm" hidden>
-          <span>Remove all medicines from this list? This cannot be undone.</span>
+          <span>Remove all medicines and their saved photos from this list? This cannot be undone.</span>
           <button id="confirm-yes" class="btn danger" type="button">Remove all</button>
           <button id="confirm-no" class="btn secondary" type="button">Cancel</button>
         </span>
@@ -129,7 +148,7 @@
       <h2>What it does</h2>
       <p>Take a photo of your medicine boxes. A Gemma model running on this laptop reads the product name and expiry date, and the app shows which ones are expired or running out.</p>
       <h2>Privacy promise</h2>
-      <p>Nothing leaves this laptop. No cloud services, no accounts, no analytics. Your photos are not stored. Only the list you see is saved, in a file on this computer.</p>
+      <p>Nothing leaves this laptop. No cloud services, no accounts, no analytics. The list you see is saved in a file on this computer, together with a copy of each photo you scan, so you can see where each line came from. The photos stay only on this laptop. They are deleted when the line is removed, or with Clear all.</p>
       <h2>How it works</h2>
       <ol>
         <li>You choose a photo.</li>
@@ -145,6 +164,13 @@
     </div>
   </section>
 </main>
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Source photo" hidden>
+  <div class="lb-inner">
+    <img id="lb-img" alt="Source photo">
+    <p>Source photo. Check the line against the real box.</p>
+    <button id="lb-close" class="btn" type="button">Close</button>
+  </div>
+</div>
 <script type="module" src="app.js"></script>
 </body>
 </html>

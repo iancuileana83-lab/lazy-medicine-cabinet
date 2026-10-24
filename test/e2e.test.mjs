@@ -1,4 +1,4 @@
-// End-to-end: real browser + the real app server, with a tiny stand-in for Ollama so the test is fast and deterministic.
+﻿// End-to-end: real browser + the real app server, with a tiny stand-in for Ollama so the test is fast and deterministic.
 // Needs: npm install (playwright) and `npx playwright install chromium` once.
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -55,7 +55,7 @@ after(async () => {
   fake?.close();
 });
 
-const names = (page) => page.locator('input[data-k=name]').evaluateAll((els) => els.map((e) => e.value));
+const names = (page) => page.locator('[data-k=name]').evaluateAll((els) => els.map((e) => e.value));
 
 test('scan, summary cards, filter and sort, pharmacy bag, next check, persistence, clear all', async () => {
   const ctx = await browser.newContext();
@@ -75,6 +75,30 @@ test('scan, summary cards, filter and sort, pharmacy bag, next check, persistenc
   await page.locator('#rows tr').nth(3).waitFor();
   assert.equal(chatBodies.length, 1);
   assert.equal(chatBodies[0].messages[0].images.length, 1); // the photo went to the (local) model
+
+  // time left under each status, coloured rows, and a thumbnail for every scanned line
+  assert.match(await page.locator('tr.r-expired .left').innerText(), /^Expired \d+ years? ago$/);
+  assert.equal(await page.locator('tr.r-soon30 .left').innerText(), 'Expires in 10 days');
+  // rows are sorted earliest first: Alpha, Bravo, Charlie, Delta (unreadable date last)
+  assert.match(await page.locator('#rows tr').nth(2).locator('.left').innerText(), /years left$/);
+  assert.equal(await page.locator('#rows tr').nth(3).locator('.left').count(), 0); // unreadable date: only the "Date not found" message
+  assert.equal(await page.locator('tr.r-expired').count(), 1);
+  assert.equal(await page.locator('tr.r-soon30').count(), 1);
+  const bg = (sel) => page.locator(sel).first().evaluate((tr) => getComputedStyle(tr.querySelector('td:nth-child(2)')).backgroundColor);
+  assert.equal(await bg('tr.r-expired'), 'rgb(253, 236, 235)'); // light red
+  assert.equal(await bg('tr.r-soon30'), 'rgb(255, 242, 217)'); // light amber
+  assert.equal(await page.locator('.thumb img').count(), 4);
+  const photoFiles = () => (fs.existsSync(path.join(path.dirname(dataFile), 'photos')) ? fs.readdirSync(path.join(path.dirname(dataFile), 'photos')) : []);
+  assert.equal(photoFiles().length, 1); // one photo, kept on this computer
+  await page.locator('.thumb').first().click();
+  await page.locator('#lightbox').waitFor();
+  assert.match(await page.locator('#lightbox').innerText(), /Source photo\. Check the line against the real box\./);
+  assert.ok((await page.locator('#lb-img').evaluate((i) => i.complete && i.naturalWidth)) > 0); // the photo really loads
+  await page.keyboard.press('Escape');
+  assert.ok(await page.locator('#lightbox').isHidden());
+  await page.locator('.thumb').first().click();
+  await page.getByRole('button', { name: 'Close' }).click();
+  assert.ok(await page.locator('#lightbox').isHidden());
 
   // summary cards
   const count = (s) => page.locator(`.sum[data-status=${s}] .n`).innerText();
@@ -134,17 +158,97 @@ test('scan, summary cards, filter and sort, pharmacy bag, next check, persistenc
 
   // clear all asks first; Cancel keeps the list
   await page.getByRole('button', { name: 'Clear all' }).click();
-  assert.match(await page.locator('#confirm').innerText(), /Remove all medicines from this list\? This cannot be undone\./);
+  assert.match(await page.locator('#confirm').innerText(), /Remove all medicines and their saved photos from this list\? This cannot be undone\./);
   await page.getByRole('button', { name: 'Cancel' }).click();
   assert.equal((await names(page)).length, 4);
+  assert.equal(photoFiles().length, 1); // Cancel keeps the photo
   await page.getByRole('button', { name: 'Clear all' }).click();
   await page.getByRole('button', { name: 'Remove all' }).click();
   assert.equal((await names(page)).length, 0);
   await page.reload();
   assert.equal((await names(page)).length, 0);
   assert.equal(JSON.parse(fs.readFileSync(dataFile, 'utf8')).items.length, 0);
+  assert.equal(photoFiles().length, 0); // Clear all deleted the photo from the disk
 
   assert.deepEqual(external, []);
+  await ctx.close();
+});
+
+const putState = (state) => fetch(`${base}/api/state`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(state) });
+const photosDir = () => path.join(path.dirname(dataFile), 'photos');
+const photoFiles = () => (fs.existsSync(photosDir()) ? fs.readdirSync(photosDir()) : []);
+
+test('a saved photo is deleted when the last line that uses it is removed', async () => {
+  await putState({ items: [], nextCheck: '2030-01-01' });
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto(base);
+  await page.setInputFiles('#photo', PHOTO);
+  await page.locator('#rows tr').nth(3).waitFor();
+  assert.equal(photoFiles().length, 1);
+  for (let left = 3; left >= 1; left--) {
+    await page.getByRole('button', { name: 'Remove' }).first().click();
+    await page.locator('#rows tr').nth(left - 1).waitFor();
+    assert.equal(photoFiles().length, 1, `still used by ${left} line(s)`);
+  }
+  await page.getByRole('button', { name: 'Remove' }).first().click();
+  await page.locator('#empty').waitFor();
+  await page.waitForFunction(() => document.querySelectorAll('#rows tr').length === 0);
+  assert.equal(photoFiles().length, 0);
+  await ctx.close();
+});
+
+test('the photo URLs only serve our own files', async () => {
+  for (const p of ['/photos/..%2Fserver.mjs', '/photos/0123456789abcdef.jpg', '/photos/../server.mjs', '/demo-photos/server.mjs', '/demo-photos/..%2Fserver.mjs']) {
+    assert.equal((await fetch(base + p)).status, 404, p);
+  }
+  const r = await fetch(`${base}/demo-photos/1-shelf-paracetamol.jpg`);
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get('content-type'), 'image/jpeg');
+});
+
+test('demo cabinet: seven fictional boxes, clearly labelled, removable without touching your own lines', async () => {
+  await putState({ items: [], nextCheck: '2030-01-01' });
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await page.goto(base);
+  assert.ok(await page.locator('#empty').isVisible());
+  assert.match(await page.locator('#empty').innerText(), /No medicines yet\. Add a photo, or add a line by hand\./);
+  assert.match(await page.locator('#empty').innerText(), /Not ready to scan yet\? Look around with seven fictional boxes\./);
+  assert.ok(await page.locator('.empty-art').isVisible());
+  assert.ok(await page.locator('#demo-banner').isHidden());
+
+  await page.getByRole('button', { name: 'Try the demo cabinet' }).click();
+  await page.locator('#rows tr').nth(6).waitFor();
+  assert.equal(await page.locator('#rows tr').count(), 7);
+  assert.match(await page.locator('#demo-banner').innerText(), /Demo data: fictional boxes\. These lines were read by Gemma from generated test photos\./);
+  assert.equal(await page.locator('.thumb img').count(), 7);
+  assert.ok((await page.locator('.thumb img').first().evaluate((i) => i.complete && i.naturalWidth)) > 0); // demo photos load
+  assert.ok((await names(page)).includes('Kalmora Paracetamol 500 mg 20 tablets'));
+
+  // add a line of your own, then remove only the demo lines
+  await page.getByRole('button', { name: 'Add a line' }).click();
+  await page.locator('#rows tr').nth(7).waitFor();
+  await page.locator('[data-k=name]').last().fill('My own box');
+  await page.locator('[data-k=name]').last().blur();
+  await page.getByRole('button', { name: 'Remove demo data' }).click();
+  await page.waitForFunction(() => document.querySelectorAll('#rows tr').length === 1);
+  assert.deepEqual(await names(page), ['My own box']);
+  assert.ok(await page.locator('#demo-banner').isHidden());
+  assert.equal(JSON.parse(fs.readFileSync(dataFile, 'utf8')).items.some((i) => i.demo), false);
+  await ctx.close();
+});
+
+test('long product names wrap and grow instead of being cut off', async () => {
+  await putState({ items: [{ name: 'Short', expiry: '01/2099' }, { name: 'A very long product name as printed on the box, with the brand, the medicine, the strength 500 mg and the pack size 20 coated tablets', expiry: '01/2099' }], nextCheck: '2030-01-01' });
+  const ctx = await browser.newContext({ viewport: { width: 1000, height: 800 } });
+  const page = await ctx.newPage();
+  await page.goto(base);
+  await page.locator('#rows tr').nth(1).waitFor();
+  const m = await page.locator('[data-k=name]').evaluateAll((els) => els.map((e) => ({ h: e.clientHeight, clipped: e.scrollHeight > e.clientHeight + 1 })));
+  assert.equal(m[0].clipped, false);
+  assert.equal(m[1].clipped, false); // everything is visible
+  assert.ok(m[1].h > m[0].h * 1.8, `long name field (${m[1].h}px) should be taller than the short one (${m[0].h}px)`);
   await ctx.close();
 });
 
@@ -153,8 +257,8 @@ test('phone layout: no sideways scrolling, rows stack as cards', async () => {
   const page = await ctx.newPage();
   await page.goto(base);
   await page.getByRole('button', { name: 'Add a line' }).click();
-  await page.locator('input[data-k=name]').first().fill('A rather long product name to test wrapping 500 mg 20 tablets');
-  await page.locator('input[data-k=name]').first().blur();
+  await page.locator('[data-k=name]').first().fill('A rather long product name to test wrapping 500 mg 20 tablets');
+  await page.locator('[data-k=name]').first().blur();
   for (const tab of ['Cabinet', 'Pharmacy bag', 'About']) {
     await page.getByRole('tab', { name: new RegExp(tab) }).click();
     const { sw, iw } = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth }));
@@ -178,3 +282,4 @@ test('old data files (a bare array) are migrated', async () => {
   const s = await (await fetch(`${base}/api/state`)).json();
   assert.deepEqual(s, { items: [{ name: 'Old', expiry: '01/2099' }], nextCheck: null });
 });
+

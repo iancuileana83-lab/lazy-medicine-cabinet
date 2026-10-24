@@ -58,9 +58,30 @@ select { font:inherit; font-size:16px; padding:6px 10px; border:1px solid var(--
 
 table { width:100%; border-collapse:collapse; table-layout:fixed; }
 th { text-align:left; font-size:14px; color:var(--muted); padding:0 8px 8px; }
-th:nth-child(1) { width:40%; } th:nth-child(2) { width:21%; } th:nth-child(4) { width:12%; }
+th:nth-child(1) { width:72px; } th:nth-child(2) { width:30%; } th:nth-child(3) { width:22%; } th:nth-child(5) { width:11%; }
 td { padding:6px 8px; vertical-align:middle; }
-input[type=text] { width:100%; font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+input[type=text], textarea { width:100%; font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); }
+textarea { display:block; resize:none; overflow:hidden; line-height:1.3; } /* the product name grows with its text */
+
+/* light red for expired rows, light amber for rows expiring within 30 days (the text label and icon stay) */
+tr.r-expired > td { background:#fdeceb; } tr.r-soon30 > td { background:#fff2d9; }
+tr.r-expired > td:first-child, tr.r-soon30 > td:first-child { border-radius:12px 0 0 12px; }
+tr.r-expired > td:last-child, tr.r-soon30 > td:last-child { border-radius:0 12px 12px 0; }
+.left { margin-top:4px; font-size:14px; color:var(--muted); }
+
+.thumb { padding:0; border:2px solid var(--line); border-radius:10px; background:#fff; cursor:zoom-in; width:60px; height:60px; overflow:hidden; display:block; }
+.thumb:hover { border-color:var(--teal); }
+.thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+
+.demo { display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center; justify-content:space-between; background:var(--teal-soft); border:1px dashed var(--teal); color:#14524a; border-radius:12px; padding:10px 14px; margin-bottom:14px; font-weight:600; }
+.demo span { flex:1 1 320px; }
+.demo .btn { margin:0; background:#fff; border:1px solid var(--teal); }
+.empty { text-align:center; padding:10px 0 6px; } .empty p { margin:6px 0; } .empty-art { width:200px; max-width:60%; height:auto; }
+
+.lightbox { position:fixed; inset:0; background:rgba(30,24,18,.78); display:flex; align-items:center; justify-content:center; z-index:50; padding:16px; }
+.lb-inner { background:var(--card); border-radius:16px; padding:14px; max-width:min(96vw,1100px); max-height:94vh; display:flex; flex-direction:column; align-items:center; gap:8px; }
+.lb-inner img { max-width:100%; max-height:70vh; border-radius:10px; object-fit:contain; }
+.lb-inner p { margin:0; color:var(--muted); font-size:15px; }
 .badge { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:999px; font-size:15px; font-weight:600; border:1px solid currentColor; }
 .badge .ico { width:18px; height:18px; flex:none; }
 .badge.expired { color:var(--expired); background:var(--expired-bg); } .badge.soon30 { color:var(--soon30); background:var(--soon30-bg); }
@@ -86,7 +107,10 @@ input[type=text] { width:100%; font:inherit; padding:8px 10px; border:1px solid 
   table, tbody, tr, td { display:block; width:100%; }
   thead { display:none; }
   tr { border:1px solid var(--line); border-radius:12px; padding:8px; margin-bottom:10px; background:#fffefb; }
+  tr.r-expired { background:#fdeceb; } tr.r-soon30 { background:#fff2d9; }
+  tr.r-expired > td, tr.r-soon30 > td { background:none; border-radius:0 !important; }
   td::before { content:attr(data-label); display:block; font-size:13px; color:var(--muted); }
+  td[data-label=""]::before { display:none; }
   td { padding:4px 4px; }
   #state { display:block; margin:10px 0 0; }
 }
