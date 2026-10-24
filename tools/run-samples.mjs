@@ -1,4 +1,4 @@
-﻿// Runs every photo in samples/ through the same scan code the app uses and compares with truth.json.
+// Runs every photo in samples/ through the same scan code the app uses and compares with truth.json.
 // Usage: node tools/run-samples.mjs   (needs Ollama running with the model pulled; ffmpeg on PATH)
 import fs from 'node:fs';
 import path from 'node:path';

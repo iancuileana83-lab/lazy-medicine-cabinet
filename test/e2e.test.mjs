@@ -1,4 +1,4 @@
-﻿// End-to-end: real browser + the real app server, with a tiny stand-in for Ollama so the test is fast and deterministic.
+// End-to-end: real browser + the real app server, with a tiny stand-in for Ollama so the test is fast and deterministic.
 // Needs: npm install (playwright) and `npx playwright install chromium` once.
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';

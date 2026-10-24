@@ -1,4 +1,4 @@
-﻿// Generates 5 "photos" of FICTIONAL medicine boxes (invented brands, no real logos or packaging)
+// Generates 5 "photos" of FICTIONAL medicine boxes (invented brands, no real logos or packaging)
 // by rendering CSS 3D boxes with Playwright. Output: samples/*.jpg and samples/truth.json.
 // Usage: node tools/make-samples.mjs
 import fs from 'node:fs';
