@@ -1,0 +1,57 @@
+{
+  "today": "2026-10-24",
+  "photos": {
+    "1-shelf-paracetamol.jpg": [
+      {
+        "name": "Paracetamol 500 mg",
+        "brand": "Kalmora",
+        "expiry": "EXP 03/2027",
+        "status": "ok"
+      }
+    ],
+    "2-table-ibuprofen.jpg": [
+      {
+        "name": "Ibuprofen 200 mg",
+        "brand": "Brevixa",
+        "expiry": "EXP: 2025-11",
+        "status": "expired"
+      }
+    ],
+    "3-shelf-vitamin.jpg": [
+      {
+        "name": "Vitamin D3 1000 IU",
+        "brand": "SunNest",
+        "expiry": "Exp. 08.2026",
+        "status": "expired"
+      }
+    ],
+    "4-side-date-saline.jpg": [
+      {
+        "name": "Saline nasal spray",
+        "brand": "Nasovie",
+        "expiry": "Use by 12/2026",
+        "status": "soon90"
+      }
+    ],
+    "5-three-boxes.jpg": [
+      {
+        "name": "Loratadine 10 mg",
+        "brand": "Allerisa",
+        "expiry": "EXP 01/2028",
+        "status": "ok"
+      },
+      {
+        "name": "Paracetamol 500 mg",
+        "brand": "Kalmora",
+        "expiry": "EXP: 2026-09",
+        "status": "expired"
+      },
+      {
+        "name": "Ibuprofen 200 mg",
+        "brand": "Brevixa",
+        "expiry": "Use by 12/2026",
+        "status": "soon90"
+      }
+    ]
+  }
+}
